@@ -82,8 +82,8 @@ end
 
 
 worldCoords = [reshape(x(:,:),1,[]); reshape(y(:,:),1,[]); reshape(z(:,:),1,[])];
-imageCoords1 = cordTrans(worldCoords, vue2);
-imageCoords2 = cordTrans(worldCoords, vue4);
+imageCoords1 = worldToImage(worldCoords, vue2);
+imageCoords2 = worldToImage(worldCoords, vue4);
 recovered = triangulate(imageCoords1, imageCoords2, vue2, vue4);
 values = L2(recovered, worldCoords);
 disp('Entire dataset L2 error stats');
@@ -96,6 +96,7 @@ fprintf('Maximum: %d\n\n',max(values));
 figure(3)
 plot(1:size(totalError,2), totalError);
 
+%% Qualitative Eval
 [val, frameNumMin] = min(totalError); % min error frame
 vidFrameMin = errFrames(frameNumMin);
 [val, frameNumMax] = max(totalError); % max error frame
@@ -110,13 +111,14 @@ x_s = x(frameNumMin,:);
 y_s = y(frameNumMin,:);
 z_s = z(frameNumMin,:);
 skelMin = [x_s; y_s; z_s];
-imageCoords = cordTrans(skelMin, vue2);
-skelMin = skeleton(imageCoords);
+imageCoords = worldToImage(skelMin, vue2);
+skelMin = constructSkeleton(imageCoords);
 hold on;
 plot(skelMin(1,:), skelMin(2,:));
 hold off;
 
-figure(5)
+waitfor(h);
+figure(4)
 
 vue2video.CurrentTime = (vidFrameMax-1)*(50/100)/vue2video.FrameRate;
 vid2FrameMax = readFrame(vue2video);
@@ -126,8 +128,8 @@ x_s = x(frameNumMax,:);
 y_s = y(frameNumMax,:);
 z_s = z(frameNumMax,:);
 skelMax = [x_s; y_s; z_s];
-imageCoords = cordTrans(skelMax, vue2);
-skelMax = skeleton(imageCoords);
+imageCoords = worldToImage(skelMax, vue2);
+skelMax = constructSkeleton(imageCoords);
 hold on;
 plot(skelMax(1,:), skelMax(2,:));
 hold off;
@@ -138,14 +140,16 @@ x_s = mocapJoints(mocapFnum,:,1);
 y_s = mocapJoints(mocapFnum,:,2);
 z_s = mocapJoints(mocapFnum,:,3);
 skel = [x_s; y_s; z_s];
-skel = skeleton(skel);
+skel = constructSkeleton(skel);
 plot3(skel(1,:), skel(2,:), skel(3,:));
 
 worldCoords = [x_s; y_s; z_s];
-imageCoords1 = cordTrans(worldCoords, vue2);
-imageCoords2 = cordTrans(worldCoords, vue4);
+imageCoords1 = worldToImage(worldCoords, vue2);
+imageCoords2 = worldToImage(worldCoords, vue4);
 recovered = triangulate(imageCoords1, imageCoords2, vue2, vue4);
-skel = skeleton(recovered);
+skel = constructSkeleton(recovered);
 hold on;
 figure(8);
 plot3(skel(1,:), skel(2,:), skel(3,:));
+
+end
