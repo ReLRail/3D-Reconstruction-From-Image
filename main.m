@@ -19,7 +19,7 @@ vue2video.CurrentTime = (mocapFnum-1)*(50/100)/vue2video.FrameRate;
 vid2Frame = readFrame(vue2video);
 image(vid2Frame)
 
-cords = cordTrans([x; y; z], vue2);
+cords = project3DTo2D(vue2,[x; y; z]);
 
 hold on;
 scatter(cords(1,:), cords(2,:), 5, 'red');
@@ -30,20 +30,44 @@ vue4video.CurrentTime = (mocapFnum-1)*(50/100)/vue2video.FrameRate;
 vid4Frame = readFrame(vue4video);
 image(vid4Frame)
 
-cords = cordTrans([x; y; z], vue4);
+cords = project3DTo2D(vue4,[x; y; z]);
 
 hold on;
 scatter(cords(1,:), cords(2,:), 5, 'red');
 hold off;
 
-cords0 = cordTrans([x; y; z], vue2);
-cords1 = cordTrans([x; y; z], vue4);
-cords_3D = triangulate(cords0, cords1,  vue2, vue4);
+cords0 = project3DTo2D(vue2, [x; y; z]);
+cords1 = project3DTo2D(vue4, [x; y; z]);
+cords_3D = reconstruct3DFrom2D(vue2, cords0, vue4, cords1);
 disp('Reconstruction error');
 disp(mean(L2([x; y; z], cords_3D)));
 
 
-epipolar(cords0, cords1, mocapFnum, vue2, vue4, vue2video, vue4video);
+[lines1 , lines2] = findEpipolarLines(cords0, cords1, vue2, vue4);
+
+tmp = linspace(0,1920,1920);
+
+colors = 'ymcrgbw';
+
+figure(1)
+image(vid2Frame)
+hold on;
+for i = 1:size(cords0,2)
+    color = mod(i,size(colors,2)) + 1;
+    plot(tmp, lines1(i,:), 'Color', colors(color));
+    scatter(cords0(1,i), cords0(2,i), 20, colors(color), 'filled');
+end
+    
+hold off;
+figure(2)
+image(vid4Frame)
+hold on;
+for i = 1:size(cords1,2)
+    color = mod(i,size(colors,2)) + 1;
+    plot(tmp, lines2(i,:), 'Color', colors(color));
+    scatter(cords1(1,i), cords1(2,i), 20, colors(color), 'filled');
+end
+
 
 x = zeros(1,size(mocapJoints,2));
 y = zeros(1,size(mocapJoints,2));
@@ -57,9 +81,9 @@ for frame = 1:size(mocapJoints,1)
         y(ind,:) = mocapJoints(frame,:,2);
         z(ind,:) = mocapJoints(frame,:,3);
         worldCoords = [x(ind,:); y(ind,:); z(ind,:)];
-        imageCoords1 = cordTrans(worldCoords, vue2);
-        imageCoords2 = cordTrans(worldCoords, vue4);
-        recovered = triangulate(imageCoords1, imageCoords2, vue2, vue4);
+        imageCoords1 = project3DTo2D(vue2, worldCoords);
+        imageCoords2 = project3DTo2D(vue4, worldCoords);
+        recovered = reconstruct3DFrom2D(vue2, imageCoords1, vue4, imageCoords2);
         totalError(ind) = sum(L2(recovered, worldCoords));
         errFrames(ind) = frame;
         ind = ind + 1;
@@ -68,9 +92,9 @@ end
 
 for i = 1:size(mocapJoints,2)
     worldCoords = [x(:,i)'; y(:,i)'; z(:,i)'];
-    imageCoords1 = cordTrans(worldCoords, vue2);
-    imageCoords2 = cordTrans(worldCoords, vue4);
-    recovered = triangulate(imageCoords1, imageCoords2, vue2, vue4);
+    imageCoords1 = project3DTo2D(vue2, worldCoords);
+    imageCoords2 = project3DTo2D(vue4, worldCoords);
+    recovered = reconstruct3DFrom2D(vue2, imageCoords1, vue4, imageCoords2);
     values = L2(recovered, worldCoords);
     fprintf('Joint: %d\n',i);
     fprintf('Mean: %d\n',mean(values));
@@ -82,9 +106,9 @@ end
 
 
 worldCoords = [reshape(x(:,:),1,[]); reshape(y(:,:),1,[]); reshape(z(:,:),1,[])];
-imageCoords1 = cordTrans(worldCoords, vue2);
-imageCoords2 = cordTrans(worldCoords, vue4);
-recovered = triangulate(imageCoords1, imageCoords2, vue2, vue4);
+imageCoords1 = project3DTo2D(vue2, worldCoords);
+imageCoords2 = project3DTo2D(vue4, worldCoords);
+recovered = reconstruct3DFrom2D(vue2, imageCoords1, vue4, imageCoords2);
 values = L2(recovered, worldCoords);
 disp('Entire dataset L2 error stats');
 fprintf('Mean: %d\n',mean(values));
@@ -110,7 +134,7 @@ x_s = x(frameNumMin,:);
 y_s = y(frameNumMin,:);
 z_s = z(frameNumMin,:);
 skelMin = [x_s; y_s; z_s];
-imageCoords = cordTrans(skelMin, vue2);
+imageCoords = project3DTo2D(vue2, skelMin);
 skelMin = skeleton(imageCoords);
 hold on;
 plot(skelMin(1,:), skelMin(2,:));
@@ -126,7 +150,7 @@ x_s = x(frameNumMax,:);
 y_s = y(frameNumMax,:);
 z_s = z(frameNumMax,:);
 skelMax = [x_s; y_s; z_s];
-imageCoords = cordTrans(skelMax, vue2);
+imageCoords = project3DTo2D(vue2, skelMax);
 skelMax = skeleton(imageCoords);
 hold on;
 plot(skelMax(1,:), skelMax(2,:));
@@ -142,9 +166,9 @@ skel = skeleton(skel);
 plot3(skel(1,:), skel(2,:), skel(3,:));
 
 worldCoords = [x_s; y_s; z_s];
-imageCoords1 = cordTrans(worldCoords, vue2);
-imageCoords2 = cordTrans(worldCoords, vue4);
-recovered = triangulate(imageCoords1, imageCoords2, vue2, vue4);
+imageCoords1 = project3DTo2D(vue2, worldCoords);
+imageCoords2 = project3DTo2D(vue4, worldCoords);
+recovered = reconstruct3DFrom2D(vue2,imageCoords1, vue4, imageCoords2);
 skel = skeleton(recovered);
 hold on;
 figure(8);
