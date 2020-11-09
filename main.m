@@ -43,7 +43,7 @@ disp('Reconstruction error');
 disp(mean(L2([x; y; z], cords_3D)));
 
 
-[lines1 , lines2] = findEpipolarLines(cords0, cords1, vue2, vue4);
+[lines1 , lines2] = findEpipolarLines(cords_3D, vue2, cords0, vue4, cords1);
 
 tmp = linspace(0,1920,1920);
 
@@ -51,13 +51,14 @@ colors = 'ymcrgbw';
 
 figure(1)
 image(vid2Frame)
+
 hold on;
 for i = 1:size(cords0,2)
     color = mod(i,size(colors,2)) + 1;
     plot(tmp, lines1(i,:), 'Color', colors(color));
     scatter(cords0(1,i), cords0(2,i), 20, colors(color), 'filled');
 end
-    
+saveas(gcf,'EpipolarLines1.png')
 hold off;
 figure(2)
 image(vid4Frame)
@@ -68,7 +69,7 @@ for i = 1:size(cords1,2)
     scatter(cords1(1,i), cords1(2,i), 20, colors(color), 'filled');
 end
 
-
+saveas(gcf,'EpipolarLines2.png')
 x = zeros(1,size(mocapJoints,2));
 y = zeros(1,size(mocapJoints,2));
 z = zeros(1,size(mocapJoints,2));
@@ -124,7 +125,7 @@ plot(1:size(totalError,2), totalError);
 vidFrameMin = errFrames(frameNumMin);
 [val, frameNumMax] = max(totalError); % max error frame
 vidFrameMax = errFrames(frameNumMax);
-
+saveas(gcf,'totalError.png')
 h = figure(4);
 vue2video.CurrentTime = (vidFrameMin-1)*(50/100)/vue2video.FrameRate;
 vid2FrameMin = readFrame(vue2video);
@@ -139,7 +140,7 @@ skelMin = skeleton(imageCoords);
 hold on;
 plot(skelMin(1,:), skelMin(2,:));
 hold off;
-
+saveas(gcf,'pos1.png')
 figure(5)
 
 vue2video.CurrentTime = (vidFrameMax-1)*(50/100)/vue2video.FrameRate;
@@ -155,7 +156,7 @@ skelMax = skeleton(imageCoords);
 hold on;
 plot(skelMax(1,:), skelMax(2,:));
 hold off;
-
+saveas(gcf,'pos2.png')
 figure(7)
 mocapFnum = 1000; 
 x_s = mocapJoints(mocapFnum,:,1);
@@ -164,6 +165,7 @@ z_s = mocapJoints(mocapFnum,:,3);
 skel = [x_s; y_s; z_s];
 skel = skeleton(skel);
 plot3(skel(1,:), skel(2,:), skel(3,:));
+saveas(gcf,'ske1.png')
 
 worldCoords = [x_s; y_s; z_s];
 imageCoords1 = project3DTo2D(vue2, worldCoords);
@@ -173,3 +175,4 @@ skel = skeleton(recovered);
 hold on;
 figure(8);
 plot3(skel(1,:), skel(2,:), skel(3,:));
+saveas(gcf,'ske2.png')
