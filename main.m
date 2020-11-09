@@ -121,9 +121,9 @@ fprintf('Maximum: %d\n\n',max(values));
 figure(3)
 plot(1:size(totalError,2), totalError);
 
-[val, frameNumMin] = min(totalError); % min error frame
+[val, frameNumMin] = min(totalError);
 vidFrameMin = errFrames(frameNumMin);
-[val, frameNumMax] = max(totalError); % max error frame
+[val, frameNumMax] = max(totalError);
 vidFrameMax = errFrames(frameNumMax);
 saveas(gcf,'totalError.png')
 h = figure(4);
